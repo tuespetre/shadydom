@@ -48,6 +48,37 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       var ev = new Event('foo', {bubbles: true, composed: true});
       a.dispatchEvent(ev);
     });
+
+    test('focus events retarget', function() {
+      var recv = [];
+      function track(el) {
+        el.addEventListener('focus', function() {
+          recv.push(el);
+        })
+      }
+      var top = document.createElement('div');
+      top.attachShadow({mode: 'open'});
+      track(top);
+      track(top.shadowRoot);
+
+      var mid = document.createElement('div');
+      mid.attachShadow({mode: 'open'});
+      track(mid);
+      track(mid.shadowRoot);
+      top.shadowRoot.appendChild(mid);
+
+      var bot = document.createElement('div');
+      track(bot);
+      mid.shadowRoot.appendChild(bot);
+
+      document.body.appendChild(top);
+
+      var ev = new Event('focus', {composed: true});
+      bot.dispatchEvent(ev);
+
+      assert.isAbove(recv.length, 0);
+      pathCompare([bot, mid, top], recv);
+    });
   });
   </script>
 </body>

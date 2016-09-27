@@ -196,6 +196,7 @@ function retargetNonBubblingEvent(e) {
   });
   for (let i = path.length - 1; i >= 0; i--) {
     node = path[i];
+    // capture phase fires all capture handlers
     fireHandlers(e, node, 'capture');
     if (e.__propagationStopped) {
       return;
@@ -204,6 +205,10 @@ function retargetNonBubblingEvent(e) {
   Object.defineProperty(e, 'eventPhase', {value: Event.BUBBLING_PHASE});
   for (let i = 0; i < path.length; i++) {
     node = path[i];
+    // bubbling phase should only fire on original target and all shadowroot hosts
+    if (i > 0 && !node.shadowRoot) {
+      continue;
+    }
     fireHandlers(e, node, 'bubble');
     if (e.__propagationStopped) {
       return;
