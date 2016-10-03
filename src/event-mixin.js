@@ -202,11 +202,24 @@ function retargetNonBubblingEvent(e) {
       return;
     }
   }
-  Object.defineProperty(e, 'eventPhase', {value: Event.BUBBLING_PHASE});
+
+  // set the event phase to `AT_TARGET` as in spec
+  Object.defineProperty(e, 'eventPhase', {value: Event.AT_TARGET});
+
+  // if the event bubbles through a `slot` node, then the next shadowroot host should be skipped,
+  // as the event target is in the light dom of the shadowroot host, and should not retarget
+  let throughSlot = false;
   for (let i = 0; i < path.length; i++) {
     node = path[i];
-    // bubbling phase should only fire on original target and all shadowroot hosts
-    if (i > 0 && !node.shadowRoot) {
+    if (node.localName === 'slot') {
+      throughSlot = true;
+    }
+    // bubbling phase should only fire on original target and all ancestor shadowroot hosts
+    if (i > 0 && (!node.shadowRoot || throughSlot)) {
+      if (node.shadowRoot) {
+        // if we are bubbling through a shadowhost, reset the `throughSlot` flag
+        throughSlot = false;
+      }
       continue;
     }
     fireHandlers(e, node, 'bubble');
